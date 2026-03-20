@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   generateAgreementPDF,
   ANNEXURE_CLAUSES,
@@ -8,17 +8,43 @@ import {
 } from './pdfGenerator';
 import './App.css';
 
-function getNextSeq(locationCode: string, year: number): number {
+const API_BASE = '/api/agreement-number';
+
+// Fetch next sequence number from Vercel KV (preview only, no increment)
+async function fetchNextSeq(locationCode: string, year: number): Promise<number> {
+  try {
+    const res = await fetch(`${API_BASE}?location=${locationCode}&year=${year}`);
+    if (res.ok) {
+      const data = await res.json();
+      return data.nextSeq;
+    }
+  } catch {
+    // Fallback to localStorage in dev mode
+  }
+  const key = `skyarc_seq_${locationCode}_${year}`;
+  return parseInt(localStorage.getItem(key) || '0', 10) + 1;
+}
+
+// Atomically increment and get agreement number from Vercel KV
+async function claimAgreementNumber(locationCode: string, year: number): Promise<string> {
+  try {
+    const res = await fetch(API_BASE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ locationCode, year }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data.agreementNumber;
+    }
+  } catch {
+    // Fallback to localStorage in dev mode
+  }
   const key = `skyarc_seq_${locationCode}_${year}`;
   const current = parseInt(localStorage.getItem(key) || '0', 10);
   const next = current + 1;
   localStorage.setItem(key, String(next));
-  return next;
-}
-
-function peekNextSeq(locationCode: string, year: number): number {
-  const key = `skyarc_seq_${locationCode}_${year}`;
-  return parseInt(localStorage.getItem(key) || '0', 10) + 1;
+  return generateAgreementNumber(locationCode, year, next);
 }
 
 function toDisplayDate(isoDate: string): string {
@@ -52,11 +78,16 @@ function App() {
   );
   const [generating, setGenerating] = useState(false);
   const [showClauses, setShowClauses] = useState(false);
+  const [previewNum, setPreviewNum] = useState('SA/HUB/2026/...');
 
   const currentYear = today.getFullYear();
-  const previewNum = generateAgreementNumber(
-    form.locationCode, currentYear, peekNextSeq(form.locationCode, currentYear)
-  );
+
+  // Fetch preview number on mount and when location changes
+  useEffect(() => {
+    fetchNextSeq(form.locationCode, currentYear).then((seq) => {
+      setPreviewNum(generateAgreementNumber(form.locationCode, currentYear, seq));
+    });
+  }, [form.locationCode, currentYear]);
 
   const updateField = (field: string, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -83,8 +114,8 @@ function App() {
 
     setGenerating(true);
     try {
-      const seq = getNextSeq(form.locationCode, currentYear);
-      const agreementNumber = generateAgreementNumber(form.locationCode, currentYear, seq);
+      // Atomically claim the next agreement number from Vercel KV
+      const agreementNumber = await claimAgreementNumber(form.locationCode, currentYear);
 
       const valueDisplay = form.includeGST
         ? `${form.campaignValue} + GST`
@@ -116,6 +147,11 @@ function App() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+
+      // Refresh preview for next agreement
+      fetchNextSeq(form.locationCode, currentYear).then((seq) => {
+        setPreviewNum(generateAgreementNumber(form.locationCode, currentYear, seq));
+      });
     } catch (err) {
       console.error('PDF generation error:', err);
       alert('Error generating PDF. Check console for details.');
