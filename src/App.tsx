@@ -89,6 +89,42 @@ function App() {
     });
   }, [form.locationCode, currentYear]);
 
+    // Pre-fill form from URL parameters
+    useEffect(() => {
+          const params = new URLSearchParams(window.location.search);
+          const updates: Partial<typeof form> = {};
+
+          // List of keys to check in URL
+          const keys = [
+                  'brandName', 'clientName', 'addressLine1', 'addressLine2', 
+                  'date', 'totalSlots', 'startDate', 'endDate', 
+                  'campaignDuration', 'campaignValue', 'locationCode', 'includeGST'
+                ];
+
+          keys.forEach(key => {
+                  const val = params.get(key);
+                  if (val !== null) {
+                            if (key === 'includeGST') {
+                                        updates.includeGST = val.toLowerCase() === 'true';
+                            } else if (key === 'locationCode') {
+                                        const loc = LOCATIONS[val.toUpperCase()];
+                                        if (loc) {
+                                                      updates.locationCode = val.toUpperCase();
+                                                      updates.locationFullName = loc.fullName;
+                                        }
+                            } else {
+                                        // Type cast hack for simple mapping
+                                        (updates as any)[key] = val;
+                            }
+                  }
+          });
+
+          if (Object.keys(updates).length > 0) {
+                  setForm(prev => ({ ...prev, ...updates }));
+          }
+    }, []);
+
+  
   const updateField = (field: string, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
