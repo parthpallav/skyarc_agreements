@@ -59,8 +59,8 @@ export default function OfferLetterForm() {
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
   const [form, setForm] = useState({
-    firstName:        'Parth',
-    fullName:         'Parth Raval',
+    firstName:        '',
+    fullName:         '',
     position:         'Sales Executive',
     date:             todayStr,
     joiningDate:      '',
@@ -157,11 +157,11 @@ export default function OfferLetterForm() {
         <div className="fields-grid">
           <div className="field">
             <label>First Name *</label>
-            <input type="text" value={form.firstName} onChange={(e) => updateField('firstName', e.target.value)} placeholder="e.g. Dhruvi" />
+            <input type="text" value={form.firstName} onChange={(e) => updateField('firstName', e.target.value)} placeholder="e.g. Parth" />
           </div>
           <div className="field">
             <label>Full Name *</label>
-            <input type="text" value={form.fullName} onChange={(e) => updateField('fullName', e.target.value)} placeholder="e.g. Dhruvi Mahidhariya" />
+            <input type="text" value={form.fullName} onChange={(e) => updateField('fullName', e.target.value)} placeholder="e.g. Parth Raval" />
           </div>
           <div className="field">
             <label>Position / Role *</label>
