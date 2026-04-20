@@ -6,6 +6,7 @@ import {
   generateAgreementNumber,
   AgreementData,
 } from './pdfGenerator';
+import OfferLetterForm from './OfferLetterForm';
 import './App.css';
 
 const API_BASE = '/api/agreement-number';
@@ -53,7 +54,10 @@ function toDisplayDate(isoDate: string): string {
   return `${d}/${m}/${y}`;
 }
 
+type Mode = 'agreement' | 'offer';
+
 function App() {
+  const [mode, setMode] = useState<Mode>('agreement');
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
@@ -204,15 +208,30 @@ function App() {
             <img src="/skyarc_logo_white.png" alt="Skyarc" className="logo-img" />
             <div className="header-divider" />
             <div className="header-labels">
-              <h1 className="app-title">Agreement Generator</h1>
-              <p className="app-subtitle">DOOH Slot Booking</p>
+              <h1 className="app-title">{mode === 'offer' ? 'Offer Letter Generator' : 'Agreement Generator'}</h1>
+              <p className="app-subtitle">{mode === 'offer' ? 'Employment Offer' : 'DOOH Slot Booking'}</p>
             </div>
           </div>
-          <div className="agreement-num-preview">{previewNum}</div>
+          {mode === 'agreement' && <div className="agreement-num-preview">{previewNum}</div>}
+        </div>
+        <div className="mode-tabs">
+          <button
+            className={`mode-tab ${mode === 'agreement' ? 'active' : ''}`}
+            onClick={() => setMode('agreement')}
+          >
+            Agreement
+          </button>
+          <button
+            className={`mode-tab ${mode === 'offer' ? 'active' : ''}`}
+            onClick={() => setMode('offer')}
+          >
+            Offer Letter
+          </button>
         </div>
       </header>
 
-      <main className="main-content">
+      {mode === 'offer' ? <OfferLetterForm /> : (
+        <main className="main-content">
         {/* Client Details */}
         <section className="form-section">
           <h2 className="section-title">
@@ -330,7 +349,8 @@ function App() {
           </button>
           <p className="generate-hint">Agreement #{previewNum}</p>
         </div>
-      </main>
+        </main>
+      )}
     </div>
   );
 }
