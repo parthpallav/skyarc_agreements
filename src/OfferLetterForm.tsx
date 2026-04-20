@@ -335,7 +335,6 @@ export default function OfferLetterForm() {
             </>
           )}
         </button>
-        <p className="generate-hint">4-page PDF · Skymurals letterhead · Plus Jakarta Sans</p>
       </div>
     </main>
   );
